@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev:simple": "webpack-dev-server --config config/webpack.config.dev.js --progress --colors --mode development",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -13,14 +14,24 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/react": "^16.8.19",
-    "leaflet": "^1.5.1",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
+    "react-hot-loader": "^4.8.7",
+    "@types/react": "^16.8.19",
+    "leaflet": "^1.5.1",
     "tangram": "^0.18.2"
   },
   "devDependencies": {
+    "compression-webpack-plugin": "^2.0.0",
+    "fork-ts-checker-webpack-plugin": "^1.3.3",
     "@types/leaflet": "^1.4.4",
-    "@types/react-dom": "^16.8.4"
+    "@types/react-dom": "^16.8.4",
+    "@types/react-hot-loader": "^4.1.0",
+    "ts-loader": "^6.0.0",
+    "typescript": "^3.4.5",
+    "webpack": "^4.31.0",
+    "webpack-bundle-analyzer": "^3.3.2",
+    "webpack-cli": "^3.3.2",
+    "webpack-dev-server": "^3.3.1"
   }
 }
