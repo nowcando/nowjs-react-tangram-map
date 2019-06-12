@@ -1,2 +1,12 @@
-node_modules
-dist
+.idea/
+node_modules/
+dist/
+*.d.ts
+*.log
+*.tgz
+typings/
+coverage/
+lib/
+docs/documentation/
+nowjs-core.iml
+package-lock.json

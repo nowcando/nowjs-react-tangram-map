@@ -7,11 +7,14 @@ declare module "tangram"{
          getFeatureAt(pixel: {x:number,y:number}, radius?: number): any;
          queryFeatures(options?:any): Promise<any>;
          loadTextures(): void;
-         load(scene?:any);
-         updateConfig(options?:{rebuild?:boolean});
+         load(scene?:any): any;
+         updateConfig(options?:{rebuild?:boolean}): any;
          rebuild():void;
          requestRedraw():void;
          screenshot(options?:any): Promise<any>;
+
+         stopVideoCapture(): Promise<any>;
+         startVideoCapture(): boolean;
          setActiveCamera(camera: string):void;
          setIntrospection(active: boolean):void
          setDataSource(name: string, config: any):Promise<any>;

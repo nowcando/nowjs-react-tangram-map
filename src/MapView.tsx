@@ -1,27 +1,27 @@
 
-import React, { CSSProperties } from 'react';
-import ReactDom from "react-dom";
-import L from 'leaflet';
-import Tangram, { TangramLeafletLayer } from 'tangram';
-import ReactDOM from 'react-dom';
-import { number } from 'prop-types';
+import L, { LatLngExpression } from "leaflet";
+import React, { CSSProperties } from "react";
+import ReactDom, { createPortal } from "react-dom";
+import Tangram, { TangramLeafletLayer } from "tangram";
+
 
 export interface ViewPoint {
-    x: number, y: number
+    x: number; y: number;
 }
-
-export interface GeoPoint {
-    lat: number;
-    lon: number;
-}
+export type GeoPointExpression = LatLngExpression ;
 export interface QueryFeaturesOptiopns {
     filter?: any;
     visible?: boolean;
     unique: boolean;
     group_by?: boolean;
-    geometry?: boolean
+    geometry?: boolean;
 }
-export interface ScreenShotOptions {
+export interface ScreenShotResponse {
+    url?: string;
+    blob?: Blob;
+    type?: string;
+}
+export interface VideoRecordResponse {
     url?: string;
     blob?: Blob;
     type?: string;
@@ -29,13 +29,21 @@ export interface ScreenShotOptions {
 
 export interface MapViewProps {
 
+    width?: number|string;
+    height?: number|string;
     style?: CSSProperties;
     scene?: any;
-    sceneParams?: any,
+    sceneParams?: any;
     attribution?: string;
-    initPoint?: GeoPoint;
+    initPoint?: GeoPointExpression;
     initZoom?: number;
-    selectionRadius?: number,
+
+    keyboard?: boolean;
+
+    zoom?: number;
+    minZoom?: number,
+    maxZoom?: number;
+    selectionRadius?: number;
     onLayerClick?: (evt: any) => void;
     onLayerHover?: (evt: any) => void;
     onScenceLoad?: (evt: any) => void;
@@ -45,65 +53,67 @@ export interface MapViewProps {
 
 }
 export interface MapViewStates { }
-export class MapView extends React.Component<MapViewProps, MapViewStates>
-{
+export class MapView extends React.Component<MapViewProps, MapViewStates> {
     private layer: TangramLeafletLayer | null;
+    private lmap: L.Map;
+    private mapEl: any;
+    public state = {
+    };
     constructor(props: MapViewProps) {
         super(props);
         this.layer = null;
     }
 
     private initMap() {
-        const { onLayerClick, onLayerHover, selectionRadius } = this.props;
+        const position = this.props.initPoint ||  [0.1, 0.1];
+        const zoom = this.props.initZoom || 15;
+        const { onLayerClick, onLayerHover,
+            selectionRadius, maxZoom, keyboard } = this.props;
 
         if (!this.layer) {
-            const mapEl = ReactDom.findDOMNode(this.refs.map);
+            this.mapEl = ReactDom.findDOMNode(this.refs.map);
 
 
-            // const ccc = {
-            //     scene: {
-            //         import: [
-            //             'https://www.nextzen.org/carto/bubble-wrap-style/8/bubble-wrap-style.zip',
-            //             'https://www.nextzen.org/carto/bubble-wrap-style/8/themes/label-10.zip'
-            //         ],
-            //         sources: {
-            //             mapzen: {
-            //                 url: 'https://tile.nextzen.org/tilezen/vector/v1/256/all/{z}/{x}/{y}.mvt',
-            //                 url_params: {
-            //                     api_key: 'tsINU1vsQnKLU1jjCimtVw'
-            //                 },
-            //                 tile_size: 256,
-            //                 max_zoom: 16
-            //             }
-            //         }
-            //     }
-            // };
-
-            const map = L.map(mapEl as any, {
-                maxZoom: 22,
+            this.lmap = L.map(this.mapEl as any, {
+                maxZoom,
                 zoomSnap: 0,
-                keyboard: false
-            });
+                keyboard,
+                // zoomControl: false,
+                // attributionControl: false,
+
+            }).setView(position, 18);
+            // this.lmap.scrollWheelZoom.disable();
+            // this.lmap.on('focus', () => { this.lmap.scrollWheelZoom.enable(); });
+            // this.lmap.on('blur', () => { this.lmap.scrollWheelZoom.disable(); });
             this.layer = Tangram.leafletLayer({
                 scene: this.props.scene,
-                selectionRadius: selectionRadius,
+                selectionRadius,
+                // numWorkers: 2, // number of web workers
+                //  highDensityDisplay: true,
+                //   noWrap: false,
+                // disableRenderLoop: false, // disable render loop
+                // introspection: true, // turn scene introspection on/off
+                //  logLevel: "debug",
+                //  showDebug: true,
+                // continuousZoom: true, // continus zoom
+               // preUpdate: (dt) => console.log('preUpdate: ' + dt),
+               // postUpdate: (dt) => console.log('postUpdate: ' + dt),
                 events: {
                     hover: onLayerHover && onLayerHover.bind(this),
                     click: onLayerClick && onLayerClick.bind(this),
                 },
-                logLevel: 'debug',
                 attribution: this.props.attribution,
             });
             if (this.layer) {
-                this.layer.scene.load(this.props.scene);
+                // this.layer.scene.load(this.props.scene);
                 // this.layer.scene.updateConfig();
-                this.layer.addTo(map);
-               // this.layer.bringToFront();
+                this.layer.addTo(this.lmap);
+                // this.layer.bringToFront();
 
-                map.setView([40.70531887544228, -74.00976419448853], 15);
-                if (this.props.initPoint) {
-                    map.setView([this.props.initPoint.lat, this.props.initPoint.lon], this.props.initZoom || 15);
-                }
+                // this.lmap.setView(this.props.initPoint, 15);
+                // if (this.props.initPoint) {
+                //     this.lmap.setView(this.props.initPoint, this.props.initZoom || 15);
+                // }
             }
 
 
@@ -112,20 +122,42 @@ export class MapView extends React.Component<MapViewProps, MapViewStates>
         // Yo! NYC maps
     }
 
-    componentDidMount() {
+    public componentDidMount() {
 
         this.initMap();
 
     }
 
-    render() {
-        const { style } = this.props;
+    public render() {
+        const position = this.props.initPoint;
+        const { style, height, width } = this.props;
         const defaultStyle: CSSProperties = {
             width: "100%",
-            height:"100vh",
-            backgroundColor: "#ccc"
+            height: 200,
+            backgroundColor: "#ccc",
+            overflow: "hidden",
         };
-        return (<div style={{ ...defaultStyle, ...style }} ref="map"></div>);
+
+        return (<div style={{ ...defaultStyle  , height, width, ...style }} ref="map"></div>);
+        // return (<MapViewBox zoom={this.state.zoom} zoomControl={ false }
+        //              center={[this.state.lat, this.state.lng]}
+        //               >
+
+        //     <TangramLayer
+        //         scene={this.props.scene}
+        //         // onMapClick={this.handleClick}
+        //         // onMapHover={this.handleHover}
+        //     />
+        //     {/* <TileLayer
+        //       attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        //       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        //     /> */}
+        //     {/* <Marker position={position as any}>
+        //       <Popup>
+        //         A pretty CSS3 popup. <br /> Easily customizable.
+        //       </Popup>
+        //     </Marker> */}
+        // </MapViewBox>);
     }
 
     //#region public methods
@@ -139,8 +171,9 @@ export class MapView extends React.Component<MapViewProps, MapViewStates>
     }
 
     private checkLayer() {
-        if (!this.layer)
+        if (!this.layer) {
             throw new Error("tangram layer not initialized");
+        }
     }
 
     /**
@@ -161,7 +194,7 @@ export class MapView extends React.Component<MapViewProps, MapViewStates>
         return this.layer && this.layer.scene.getFeatureAt(pixel, radius);
     }
 
-    load(scene_url: any, options?: { base_url?: string, file_type?: string }) {
+    public load(scene_url: any, options?: { base_url?: string, file_type?: string }) {
 
     }
     /**
@@ -172,66 +205,80 @@ export class MapView extends React.Component<MapViewProps, MapViewStates>
         return this.layer && this.layer.scene.loadTextures();
     }
     /**
-     * Rebuilds the current scene from scratch. 
+     * Rebuilds the current scene from scratch.
      * */
-    rebuild() {
+    public rebuild() {
         this.checkLayer();
         return this.layer && this.layer.scene.rebuild();
     }
     /**
      * Requests an update to the drawn map. If the map contains animated elements, this happens once per frame automatically. If not, it happens whenever the map view changes (pan, zoom, etc.).
      */
-    requestRedraw() {
+    public requestRedraw() {
         this.checkLayer();
         return this.layer && this.layer.scene.requestRedraw();
     }
     /**
-     * 
+     *
      * @param param0 This queues a screenshot request, returning a Promise that fulfills when the screenshot is available.
      */
-    screenshot({ background = 'transparent' }): Promise<ScreenShotOptions> {
+    public screenshot({ background = "transparent" }): Promise<ScreenShotResponse> {
         this.checkLayer();
-        if (!this.layer) return Promise.resolve(null);
+        if (!this.layer) { return Promise.resolve(null); }
         return this.layer && this.layer.scene.screenshot(background);
     }
+
+    public startVideo(){
+        this.checkLayer();
+        if (!this.layer) { return Promise.resolve(null); }
+        return this.layer && this.layer.scene.startVideoCapture();
+    }
+
+    public stopVideo(): Promise<VideoRecordResponse> {
+        this.checkLayer();
+        if (!this.layer) { return Promise.resolve(null); }
+        return this.layer && this.layer.scene.stopVideoCapture();
+    }
+
+
     /**
-     * 
-     * @param {boolean}camera 
+     *
+     * @param {boolean}camera
      * Sets the active camera to the camera specified by name, as named in the scene file.
      */
-    setActiveCamera(camera: string) {
+    public setActiveCamera(camera: string) {
         this.checkLayer();
         return this.layer && this.layer.scene.setActiveCamera(camera);
     }
     /**
-     * 
+     *
      * @param {boolean}active
      *  Enabling or disabling introspection at run-time will cause the scene to rebuild automatically to reflect the new setting.
      */
-    setIntrospection(active: boolean) {
+    public setIntrospection(active: boolean) {
         this.checkLayer();
         return this.layer && this.layer.scene.setIntrospection(active);
     }
 
-    setDataSource(name: string, config: any): Promise<any> {
+    public setDataSource(name: string, config: any): Promise<any> {
         this.checkLayer();
-        if (!this.layer) return Promise.resolve(null);
+        if (!this.layer) { return Promise.resolve(null); }
         return this.layer && this.layer.scene.setDataSource(name, config);
     }
     /**
-     * 
+     *
      * @param  {FeaturesTiles} options
-     * 
-     *  Queries the tiles which intersect the viewport and returns the features contained in those tiles. 
+     *
+     *  Queries the tiles which intersect the viewport and returns the features contained in those tiles.
      * The query method has the following signature and default parameters: queryFeatures({ filter = null, visible = null, unique = true, group_by = null, geometry = false })
      */
     public queryFeatures(options?: QueryFeaturesOptiopns): Promise<any> {
         this.checkLayer();
-        if (!this.layer) return Promise.resolve(null);
+        if (!this.layer) { return Promise.resolve(null); }
         return this.layer && this.layer.scene.queryFeatures(options);
     }
 
-    //#end region
+    // #end region
 
 
 
