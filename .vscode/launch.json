@@ -4,11 +4,12 @@
  {
      "version": "0.2.0",
      "configurations": [
+         
 
          {
              "type": "chrome",
              "request": "launch",
-             "name": "web-client-chrome-launch",
+             "name": "web-app-chrome-launch",
              "url": "http://localhost:6020",
              "webRoot": "${workspaceRoot}/",
              "preLaunchTask": "webpack-dev-server-watch",
@@ -18,7 +19,7 @@
          {
              "type": "chrome",
              "request": "launch",
-             "name": "web-client-chrome-launch-notask",
+             "name": "web-app-chrome-launch-notask",
              "url": "http://localhost:6020",
              "webRoot": "${workspaceRoot}/",
 
@@ -26,17 +27,42 @@
          {
              "type": "node",
              "request": "launch",
-             "name": "web-client-webpack-launch",
+             "name": "web-app-webpack-launch",
              "program": "${workspaceFolder}/node_modules/webpack-dev-server/bin/webpack-dev-server",
              "args": [],
              "env": {
                  "NODE_ENV": "development"
              }
 
-         }
+         },
+         {
+            "type": "node",
+            "request": "launch",
+            "name": "web-app-test-launch",
+            "protocol": "inspector",
+            "port": 5858,
+            "address": "localhost",
+            "stopOnEntry": false,
+            "sourceMaps": true,
+            "runtimeExecutable": null,
+            "showAsyncStacks": true,
+            "runtimeArgs": [
+                "--inspect-brk=5858",
+               // "--icu-data-dir=./node_modules/full-icu",
+                "${workspaceRoot}/node_modules/.bin/jest",
+                "--runInBand",
+                "--no-cache",
+                "--colors",
+                "--config",
+                "./jest.json",
+            ],
+            "cwd": "${workspaceRoot}",
+            "console": "internalConsole",
+            "timeout": 60000
+        },
      ],
      "compounds": [{
-         "name": "web-client-launch",
-         "configurations": ["web-client-webpack-launch", "web-client-chrome-launch-notask"]
+         "name": "web-app-launch",
+         "configurations": ["web-app-webpack-launch", "web-app-chrome-launch-notask"]
      }]
  }

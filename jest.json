@@ -1,5 +1,9 @@
 {
+    "testEnvironment": "jsdom",
+    "snapshotSerializers": ["enzyme-to-json/serializer"],
+    "setupFilesAfterEnv": ["<rootDir>/test/setupEnzymeTest.ts"],
     "globals": {
+        "window": true,
         "ts-jest": {
             "tsConfig": "./tsconfig.test.json",
             "babelConfig": true
@@ -33,4 +37,5 @@
             "statements": 60
         }
     }
+   
 }

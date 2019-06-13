@@ -167,8 +167,8 @@ export class MapView extends React.Component<MapViewProps, MapViewStates> {
         };
 
         return (<div style={{ ...defaultStyle, height, width, ...style }}
-                     ref="map">
-                     </div>);
+            ref="map">
+        </div>);
     }
 
     //#region public methods
