@@ -6,10 +6,11 @@ dist/
 dist/test/
 src/
 test/
+examples/
+config/
 *.log
 *.tgz
 .npmignore
-nowjs-core.iml
 tsconfig.json
 tslint.json
 tsconfig.debug.json

@@ -8,7 +8,7 @@ import Tangram, { TangramLeafletLayer } from "tangram";
 export interface ViewPoint {
     x: number; y: number;
 }
-export type GeoPointExpression = LatLngExpression ;
+export type GeoPointExpression = LatLngExpression;
 export interface QueryFeaturesOptiopns {
     filter?: any;
     visible?: boolean;
@@ -29,27 +29,38 @@ export interface VideoRecordResponse {
 
 export interface MapViewProps {
 
-    width?: number|string;
-    height?: number|string;
+    width?: number | string;
+    height?: number | string;
     style?: CSSProperties;
     scene?: any;
     sceneParams?: any;
     attribution?: string;
-    initPoint?: GeoPointExpression;
+    initPosition?: GeoPointExpression;
     initZoom?: number;
+
+    numberofWorkers?: number;
 
     keyboard?: boolean;
 
+    position?: GeoPointExpression;
     zoom?: number;
-    minZoom?: number,
+    minZoom?: number;
     maxZoom?: number;
     selectionRadius?: number;
-    onLayerClick?: (evt: any) => void;
-    onLayerHover?: (evt: any) => void;
-    onScenceLoad?: (evt: any) => void;
-    onSceneViewComplete?: (evt: any) => void;
-    onSceneError?: (evt: any) => void;
-    onSceneWarning?: (evt: any) => void;
+    continuousZoom?: number;
+    showDebug?: boolean;
+
+    leafletEvents?: any;
+    onLayerClick?: (evt?: any) => void;
+    onLayerHover?: (evt?: any) => void;
+
+    onScenceLoad?: (evt?: any) => void;
+    onSceneViewComplete?: (evt?: any) => void;
+    onSceneError?: (evt?: any) => void;
+    onSceneWarning?: (evt?: any) => void;
+
+    onPreUpate?: (evt?: any) => void;
+    onPostUpate?: (evt?: any) => void;
 
 }
 export interface MapViewStates { }
@@ -65,10 +76,13 @@ export class MapView extends React.Component<MapViewProps, MapViewStates> {
     }
 
     private initMap() {
-        const position = this.props.initPoint ||  [0.1, 0.1];
+        const position = this.props.initPosition || [0.1, 0.1];
         const zoom = this.props.initZoom || 15;
-        const { onLayerClick, onLayerHover,
-            selectionRadius, maxZoom, keyboard } = this.props;
+        const { onLayerClick, onLayerHover, onPostUpate, onPreUpate,
+            onScenceLoad, onSceneError, onSceneWarning, onSceneViewComplete,
+            selectionRadius, maxZoom, keyboard, leafletEvents,
+            numberofWorkers, showDebug, continuousZoom,
+        } = this.props;
 
         if (!this.layer) {
             this.mapEl = ReactDom.findDOMNode(this.refs.map);
@@ -88,23 +102,34 @@ export class MapView extends React.Component<MapViewProps, MapViewStates> {
             this.layer = Tangram.leafletLayer({
                 scene: this.props.scene,
                 selectionRadius,
-                // numWorkers: 2, // number of web workers
+                numWorkers: numberofWorkers, // number of web workers
                 //  highDensityDisplay: true,
                 //   noWrap: false,
                 // disableRenderLoop: false, // disable render loop
                 // introspection: true, // turn scene introspection on/off
                 //  logLevel: "debug",
-                //  showDebug: true,
-                // continuousZoom: true, // continus zoom
-               // preUpdate: (dt) => console.log('preUpdate: ' + dt),
-               // postUpdate: (dt) => console.log('postUpdate: ' + dt),
+                showDebug,
+                continuousZoom, // continus zoom
+                preUpdate: onPreUpate,
+                postUpdate: onPostUpate,
                 events: {
-                    hover: onLayerHover && onLayerHover.bind(this),
-                    click: onLayerClick && onLayerClick.bind(this),
+                    hover: onLayerHover,
+                    click: onLayerClick,
+                    ...leafletEvents,
                 },
                 attribution: this.props.attribution,
             });
             if (this.layer) {
+                if (this.layer.scene) {
+                    this.layer.scene.subscribe({
+                        load: onScenceLoad,
+                        view_complete: onSceneViewComplete,
+                        error: onSceneError,
+                        warning: onSceneWarning,
+
+
+                    });
+                }
                 // this.layer.scene.load(this.props.scene);
                 // this.layer.scene.updateConfig();
                 this.layer.addTo(this.lmap);
@@ -128,8 +153,11 @@ export class MapView extends React.Component<MapViewProps, MapViewStates> {
 
     }
 
+    public componentWillUnmount() {
+        this.layer.removeFrom(this.lmap);
+    }
+
     public render() {
-        const position = this.props.initPoint;
         const { style, height, width } = this.props;
         const defaultStyle: CSSProperties = {
             width: "100%",
@@ -138,30 +166,21 @@ export class MapView extends React.Component<MapViewProps, MapViewStates> {
             overflow: "hidden",
         };
 
-        return (<div style={{ ...defaultStyle  , height, width, ...style }} ref="map"></div>);
-        // return (<MapViewBox zoom={this.state.zoom} zoomControl={ false }
-        //              center={[this.state.lat, this.state.lng]}
-        //               >
-
-        //     <TangramLayer
-        //         scene={this.props.scene}
-        //         // onMapClick={this.handleClick}
-        //         // onMapHover={this.handleHover}
-        //     />
-        //     {/* <TileLayer
-        //       attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-        //       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        //     /> */}
-        //     {/* <Marker position={position as any}>
-        //       <Popup>
-        //         A pretty CSS3 popup. <br /> Easily customizable.
-        //       </Popup>
-        //     </Marker> */}
-        // </MapViewBox>);
+        return (<div style={{ ...defaultStyle, height, width, ...style }}
+                     ref="map">
+                     </div>);
     }
 
     //#region public methods
 
+
+    public getMap() {
+        return this.lmap;
+    }
+    public getLayer() {
+        this.checkLayer();
+        return this.layer;
+    }
     /**
      * return tangram scene object
      */
@@ -228,7 +247,7 @@ export class MapView extends React.Component<MapViewProps, MapViewStates> {
         return this.layer && this.layer.scene.screenshot(background);
     }
 
-    public startVideo(){
+    public startVideo() {
         this.checkLayer();
         if (!this.layer) { return Promise.resolve(null); }
         return this.layer && this.layer.scene.startVideoCapture();

@@ -16,13 +16,22 @@ declare module "tangram"{
          stopVideoCapture(): Promise<any>;
          startVideoCapture(): boolean;
          setActiveCamera(camera: string):void;
-         setIntrospection(active: boolean):void
-         setDataSource(name: string, config: any):Promise<any>;
+         setIntrospection(active: boolean):void;
+         setDataSource(name: string, config: any): Promise<any>;
+
+         subscribe(options?: {
+            error?: (evt?: any) => void,
+            warning?: (evt?: any) => void,
+            load?: (evt?: any) => void,
+            view_complete?: (evt?: any) => void,
+
+         }): void;
     }
 
     interface TangramLeafletLayer{
         scene:Scene
         addTo(map:L.Map):void;
+        removeFrom(ma:L.Map): void;
         bringToFront():void;
     }
       
